@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo CNC · Ámbar del Sur & Guissel</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Barra Superior -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <svg class="cnc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="logo-title">Catálogo CNC</span>
+      </div>
+      <div class="stats-pills" id="statsPills">
+        <span class="pill" id="statFolders">Carpetas: --</span>
+        <span class="pill pill-green" id="statDesigns">Modelos: --</span>
+      </div>
+    </div>
+
+    <!-- Buscador central -->
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Buscar diseño o medida (ej: delfin, 50x50, luna, araucaria)...">
+      <button id="clearSearch" class="btn-clear" style="display:none;">✕</button>
+    </div>
+
+    <!-- Botón abrir lista seleccionados -->
+    <div class="header-right">
+      <button id="btnToggleIgnored" class="btn-secondary" title="Ver carpetas descartadas del catálogo">
+        🗑️ Descartados (<span id="ignoredCount">0</span>)
+      </button>
+      <button id="btnRefresh" class="btn-secondary" title="Reescanear">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      </button>
+      <button id="btnToggleCart" class="btn-primary">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Lista para Corte (<span id="cartCount">0</span>)
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="main-container">
+
+    <!-- DOS CUADROS GRANDOTES DE COLECCIONES PRINCIPALES -->
+    <section class="hero-collections-section">
+      <h2 class="section-heading">Selecciona una Colección de Diseños</h2>
+      <div class="hero-collections-grid">
+        
+        <!-- Cuadro 1: Ámbar del Sur -->
+        <div class="hero-card hero-ambar active" id="heroAmbar" onclick="selectCollection('ambar')">
+          <div class="hero-card-glow"></div>
+          <div class="hero-card-content">
+            <span class="hero-badge">Colección Principal</span>
+            <h1 class="hero-title">Ámbar del Sur</h1>
+            <p class="hero-desc">Árboles, gotas, hexagonales, lunas, rectángulos, corazones y figuras geométricas.</p>
+            <div class="hero-meta">
+              <span class="hero-stat" id="statAmbarFolders">📁 25 Carpetas</span>
+              <span class="hero-stat" id="statAmbarDesigns">📐 165 Diseños</span>
+            </div>
+          </div>
+          <div class="hero-card-arrow">Explorar Carpetas →</div>
+        </div>
+
+        <!-- Cuadro 2: Guissel -->
+        <div class="hero-card hero-guissel" id="heroGuissel" onclick="selectCollection('guissel')">
+          <div class="hero-card-glow"></div>
+          <div class="hero-card-content">
+            <span class="hero-badge hero-badge-pink">Colección Principal</span>
+            <h1 class="hero-title">Guissel</h1>
+            <p class="hero-desc">Cuelga Gisehs, delfines, mariposas, flores, estrellas, colibrí, pino y tortugas.</p>
+            <div class="hero-meta">
+              <span class="hero-stat" id="statGuisselFolders">📁 23 Carpetas</span>
+              <span class="hero-stat" id="statGuisselDesigns">📐 152 Diseños</span>
+            </div>
+          </div>
+          <div class="hero-card-arrow">Explorar Carpetas →</div>
+        </div>
+
+      </div>
+
+      <!-- Selector opcional de extras -->
+      <div class="secondary-tabs">
+        <button class="tab-chip" id="tabOtros" onclick="selectCollection('otros')">
+          ⚙️ Ver Extras y Prototipos Antiguos
+        </button>
+      </div>
+    </section>
+
+    <!-- LISTA DE RECTÁNGULOS DE CARPETAS DESPLEGABLES -->
+    <section class="folders-container">
+      <div class="folders-header">
+        <h3 id="currentCollectionTitle">Carpetas de Ámbar del Sur</h3>
+        <span class="folders-count" id="currentFoldersCount">25 carpetas disponibles</span>
+      </div>
+
+      <div id="foldersList" class="folders-list">
+        <!-- Rectángulos de carpetas inyectados aquí -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Panel Desplegable Lateral: Lista Seleccionados con Cantidades -->
+  <aside id="cartDrawer" class="cart-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <h3>Lista de Selección para Corte</h3>
+        <span class="badge badge-accent" id="drawerItemCount">0 items</span>
+      </div>
+      <button id="btnCloseDrawer" class="btn-icon">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <div id="cartEmptyState" class="empty-state">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="11" y2="17"/></svg>
+        <p>No has seleccionado ningún diseño aún.</p>
+        <small>Marca la casilla en cualquier modelo para agregarlo aquí.</small>
+      </div>
+      <div id="cartItemsList" class="cart-items-list">
+        <!-- Elementos del carrito inyectados aquí -->
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <div class="cart-summary">
+        <span>Total Piezas a Cortar: <strong id="totalPiecesCount">0</strong></span>
+        <button id="btnClearCart" class="btn-text-danger">Vaciar lista</button>
+      </div>
+      <div class="cart-action-buttons">
+        <button id="btnCopyClipboard" class="btn-success">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar Lista al Portapapeles
+        </button>
+        <button id="btnDownloadTxt" class="btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar TXT
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Mensaje copiado</div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "fe6cee305571": {
+    "type": "folder",
+    "name": "1 ARBOL",
+    "rel": "AMBAR DEL SUR/1  ARBOL/1  ARBOL - 26 junio -2025- 19 sep 2025"
+  },
+  "87b1c0f0a17e": {
+    "type": "folder",
+    "name": "10 GOTAS (B3)",
+    "rel": "AMBAR DEL SUR/10 GOTAS/3"
+  },
+  "ab806baee4ea": {
+    "type": "folder",
+    "name": "10 GOTAS (B2.5)",
+    "rel": "AMBAR DEL SUR/10 GOTAS/2.5"
+  },
+  "bf23e32f55ee": {
+    "type": "folder",
+    "name": "10 GOTAS (B2)",
+    "rel": "AMBAR DEL SUR/10 GOTAS/2"
+  },
+  "0024f28b8683": {
+    "type": "folder",
+    "name": "13 LUNAS",
+    "rel": "AMBAR DEL SUR/13 LUNAS"
+  },
+  "3fbd8e610c9d": {
+    "type": "folder",
+    "name": "12 HOJAS DE ARBOL (general)",
+    "rel": "AMBAR DEL SUR/12 HOJAS DE ARBOL"
+  },
+  "29f1b6fea82f": {
+    "type": "folder",
+    "name": "12 HOJAS DE ARBOL (B2)",
+    "rel": "AMBAR DEL SUR/12 HOJAS DE ARBOL/2"
+  },
+  "c60a1aac33c9": {
+    "type": "design",
+    "name": "12 HOJAS DE ARBOL",
+    "design_id": "c60a1aac33c9"
+  }
+}

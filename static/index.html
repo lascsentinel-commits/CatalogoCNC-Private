@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo CNC · Ámbar del Sur & Guissel</title>
+  <title>Catálogo CNC · Ámbar del Sur &amp; Guissel</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,9 @@
       </div>
       <div class="stats-pills" id="statsPills">
         <span class="pill" id="statFolders">Carpetas: --</span>
-        <span class="pill pill-green" id="statDesigns">Modelos: --</span>
+        <span class="pill" id="statDesigns">Diseños: --</span>
+        <span class="pill pill-red" id="statPending">🔴 Faltan: --</span>
+        <span class="pill pill-green" id="statReady">🟢 Listos: --</span>
       </div>
     </div>
 
@@ -33,21 +35,25 @@
         <circle cx="11" cy="11" r="8"/>
         <line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="text" id="searchInput" placeholder="Buscar diseño o medida (ej: delfin, 50x50, luna, araucaria)...">
+      <input type="text" id="searchInput" placeholder="Buscar diseño, archivo o medida (ej: delfin, 50x50, .c2d)...">
       <button id="clearSearch" class="btn-clear" style="display:none;">✕</button>
     </div>
 
-    <!-- Botón abrir lista seleccionados -->
+    <!-- Botones de acción derecha -->
     <div class="header-right">
+      <button id="btnSyncWindows" class="btn-sync-win" title="Copiar todas las imágenes reales hacia las carpetas de los .nc/.c2d para Windows Explorer">
+        🖼️ Sincronizar Explorer
+      </button>
       <button id="btnToggleIgnored" class="btn-secondary" title="Ver carpetas descartadas del catálogo">
         🗑️ Descartados (<span id="ignoredCount">0</span>)
       </button>
-      <button id="btnRefresh" class="btn-secondary" title="Reescanear">
+      <button id="btnRefresh" class="btn-secondary" title="Reescanear carpetas y archivos">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Actualizar
       </button>
       <button id="btnToggleCart" class="btn-primary">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        Lista para Corte (<span id="cartCount">0</span>)
+        Lista (<span id="cartCount">0</span>)
       </button>
     </div>
   </header>
@@ -59,7 +65,7 @@
     <section class="hero-collections-section">
       <h2 class="section-heading">Selecciona una Colección de Diseños</h2>
       <div class="hero-collections-grid">
-        
+
         <!-- Cuadro 1: Ámbar del Sur -->
         <div class="hero-card hero-ambar active" id="heroAmbar" onclick="selectCollection('ambar')">
           <div class="hero-card-glow"></div>
@@ -68,8 +74,8 @@
             <h1 class="hero-title">Ámbar del Sur</h1>
             <p class="hero-desc">Árboles, gotas, hexagonales, lunas, rectángulos, corazones y figuras geométricas.</p>
             <div class="hero-meta">
-              <span class="hero-stat" id="statAmbarFolders">📁 25 Carpetas</span>
-              <span class="hero-stat" id="statAmbarDesigns">📐 165 Diseños</span>
+              <span class="hero-stat" id="statAmbarFolders">📁 -- Formas</span>
+              <span class="hero-stat" id="statAmbarDesigns">📐 -- Diseños</span>
             </div>
           </div>
           <div class="hero-card-arrow">Explorar Carpetas →</div>
@@ -83,8 +89,8 @@
             <h1 class="hero-title">Guissel</h1>
             <p class="hero-desc">Cuelga Gisehs, delfines, mariposas, flores, estrellas, colibrí, pino y tortugas.</p>
             <div class="hero-meta">
-              <span class="hero-stat" id="statGuisselFolders">📁 23 Carpetas</span>
-              <span class="hero-stat" id="statGuisselDesigns">📐 152 Diseños</span>
+              <span class="hero-stat" id="statGuisselFolders">📁 -- Formas</span>
+              <span class="hero-stat" id="statGuisselDesigns">📐 -- Diseños</span>
             </div>
           </div>
           <div class="hero-card-arrow">Explorar Carpetas →</div>
@@ -92,11 +98,26 @@
 
       </div>
 
-      <!-- Selector opcional de extras -->
-      <div class="secondary-tabs">
-        <button class="tab-chip" id="tabOtros" onclick="selectCollection('otros')">
-          ⚙️ Ver Extras y Prototipos Antiguos
-        </button>
+      <!-- Barra de separación rápida Rojo (Faltan) / Verde (Listos) -->
+      <div class="filter-toolbar-row">
+        <div class="secondary-tabs">
+          <button class="tab-chip" id="tabOtros" onclick="selectCollection('otros')">
+            ⚙️ Ver Extras y Prototipos Antiguos
+          </button>
+        </div>
+
+        <div class="filter-status-bar" role="group" aria-label="Filtrar por estado de imagen real">
+          <span class="filter-bar-label">Separar por foto real:</span>
+          <button id="btnFilterAll" class="btn-filter-status active" onclick="setStatusFilter('all')">
+            📋 Todos (<span id="countFilterAll">0</span>)
+          </button>
+          <button id="btnFilterPending" class="btn-filter-status btn-filter-pending" onclick="setStatusFilter('pending')">
+            🔴 Faltan Imagen (<span id="countFilterPending">0</span>)
+          </button>
+          <button id="btnFilterReady" class="btn-filter-status btn-filter-ready" onclick="setStatusFilter('updated')">
+            🟢 Listos con Foto (<span id="countFilterReady">0</span>)
+          </button>
+        </div>
       </div>
     </section>
 
@@ -104,7 +125,7 @@
     <section class="folders-container">
       <div class="folders-header">
         <h3 id="currentCollectionTitle">Carpetas de Ámbar del Sur</h3>
-        <span class="folders-count" id="currentFoldersCount">25 carpetas disponibles</span>
+        <span class="folders-count" id="currentFoldersCount">-- carpetas disponibles</span>
       </div>
 
       <div id="foldersList" class="folders-list">

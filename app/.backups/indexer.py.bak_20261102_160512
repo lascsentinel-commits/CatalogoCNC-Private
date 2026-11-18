@@ -1,0 +1,284 @@
+import os
+import re
+import json
+import hashlib
+from pathlib import Path
+from collections import defaultdict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+CACHE_DIR = BASE_DIR / "cache"
+CAPTURES_DIR = BASE_DIR / "captures"
+DATA_FILE = BASE_DIR / "catalog_data.json"
+IGNORED_FILE = BASE_DIR / "ignored_designs.json"
+IGNORED_FOLDERS_FILE = BASE_DIR / "ignored_folders.json"
+
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+
+MASTER_ROOT = Path("/home/dhamit/Documentos/DISEÑOS-CNC-AMBAR-Y-GUSSEL-ANTIGUOS")
+
+def load_ignored():
+    if IGNORED_FILE.exists():
+        try:
+            with open(IGNORED_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except:
+            pass
+    return set()
+
+def save_ignored(ignored_set):
+    with open(IGNORED_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(ignored_set), f, indent=2, ensure_ascii=False)
+
+def load_ignored_folders():
+    if IGNORED_FOLDERS_FILE.exists():
+        try:
+            with open(IGNORED_FOLDERS_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except:
+            pass
+    return set()
+
+def save_ignored_folders(folders_set):
+    with open(IGNORED_FOLDERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(folders_set), f, indent=2, ensure_ascii=False)
+
+def get_hash(text):
+    return hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
+
+def extract_broca(text):
+    """Extrae el calibre de la broca (B1.5, B2, B2.5, B3)"""
+    t = text.lower()
+    m = re.search(r'\bbroca\s*(?:de)?\s*([0-9]+(?:\.[0-9]+)?)\b', t)
+    if m:
+        return f"B{m.group(1)}"
+    m2 = re.search(r'\bb-?u?([0-9]+(?:\.[0-9]+)?)\b', t)
+    if m2:
+        return f"B{m2.group(1)}"
+    m3 = re.search(r'[/\s_]([123](?:\.[05])?)(?:mm)?[/\s_]', t)
+    if m3:
+        return f"B{m3.group(1)}"
+    return "B2"
+
+def extract_dimensions_from_name(filename):
+    """Extrae medidas nominales del nombre de archivo"""
+    m = re.search(r'(\d+(?:\.\d+)?)\s*[xX*]\s*(\d+(?:\.\d+)?)', filename)
+    if m:
+        try:
+            return float(m.group(1)), float(m.group(2)), f"{m.group(1)} × {m.group(2)} mm"
+        except:
+            pass
+    m2 = re.search(r'\b(?:larg|radio|d|r)?\s*(\d+(?:\.\d+)?)\s*mm\b', filename.lower())
+    if m2:
+        try:
+            val = float(m2.group(1))
+            return val, val, f"{val} mm"
+        except:
+            pass
+    return 0.0, 0.0, "Medida Estándar"
+
+def scan_all_designs(force_refresh=False):
+    if not force_refresh and DATA_FILE.exists():
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading cache data: {e}")
+
+    ignored_designs = load_ignored()
+    ignored_folders = load_ignored_folders()
+
+    # Mapear fotos generales existentes
+    general_photos = {}
+    general_dir = MASTER_ROOT / "CNC" / "FOTOS DE DISEÑOS GENERAL"
+    if general_dir.exists():
+        for f in os.listdir(general_dir):
+            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                key = Path(f).stem.lower().strip()
+                general_photos[key] = str(general_dir / f)
+
+    # Estructura de Colecciones
+    collections = {
+        "ambar": {
+            "id": "ambar",
+            "title": "Ámbar del Sur",
+            "subtitle": "Colección completa de diseños Ámbar del Sur",
+            "badge": "Ámbar",
+            "folders": {}
+        },
+        "guissel": {
+            "id": "guissel",
+            "title": "Guissel",
+            "subtitle": "Colección de Diseños Gisse, Cuelga Gisehs y figuras",
+            "badge": "Guissel",
+            "folders": {}
+        },
+        "otros": {
+            "id": "otros",
+            "title": "Extras y Prototipos",
+            "subtitle": "Diseños adicionales, pruebas y versiones anteriores",
+            "badge": "Extras",
+            "folders": {}
+        }
+    }
+
+    # Recorrer carpetas de corte EXCLUYENDO DEMOS
+    for root, dirs, files in os.walk(MASTER_ROOT):
+        # Descartar carpetas de demos y temporales de raíz
+        if any(p in root.upper() for p in ["DEMO", "DEMOS", ".GIT", "TMP"]):
+            continue
+            
+        nc_files = [f for f in files if f.lower().endswith((".nc", ".gcode", ".ngc", ".tap", ".dxf"))]
+        if not nc_files:
+            continue
+
+        rel = os.path.relpath(root, MASTER_ROOT)
+        parts = rel.split(os.sep)
+        p_up = rel.upper()
+
+        # 1. Determinar Colección Principal
+        if "AMBAR DEL SUR" in p_up:
+            col_id = "ambar"
+        elif "DISEÑOS GISSE" in p_up or "CUELGA GISE" in p_up or "GISSE" in p_up:
+            col_id = "guissel"
+        else:
+            col_id = "otros"
+
+        # 2. Determinar Carpeta / Forma (Rectángulo Nivel 2)
+        shape_category = parts[1] if len(parts) > 1 else parts[0]
+        if shape_category.upper() in ["CUELGA GISEPHS", "Z DHANI", "EXTRAS", "CNC", "DISEÑOS GISSE", "AMBAR DEL SUR"]:
+            if len(parts) > 2:
+                shape_category = parts[2]
+
+        folder_id = get_hash(f"{col_id}_{shape_category}")
+
+        # 3. Determinar Modelo / Sub-diseño (Nivel 3)
+        # En vez de crear un modelo por cada broca o medida, unificamos por concepto
+        sub_concept = parts[-1]
+        # Si la carpeta actual es una subcarpeta de broca (ej: '1.5', '2', '2.5', '3') o 'NORMAL_'/'MIRROR_'
+        if sub_concept in ["1.5", "2", "2.5", "3", "NORMAL_", "MIRROR_", ".NC", "NC"] or sub_concept == shape_category:
+            if len(parts) > 2 and parts[-2] not in ["AMBAR DEL SUR", "CNC", "DISEÑOS GISSE", "CUELGA GISEPHS"]:
+                sub_concept = parts[-2]
+            else:
+                sub_concept = shape_category
+
+        design_id = get_hash(f"{col_id}_{shape_category}_{sub_concept}")
+
+        # Buscar foto existente o captura de UGS
+        photo_path = None
+        custom_cap = CAPTURES_DIR / f"{design_id}.png"
+        if custom_cap.exists():
+            photo_path = str(custom_cap)
+        else:
+            custom_cap_jpg = CAPTURES_DIR / f"{design_id}.jpg"
+            if custom_cap_jpg.exists():
+                photo_path = str(custom_cap_jpg)
+
+        if not photo_path:
+            # Buscar en la carpeta del corte
+            for f in files:
+                if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    photo_path = os.path.join(root, f)
+                    break
+
+        if not photo_path:
+            norm_name = sub_concept.lower().replace("_", " ").strip()
+            for key, gpath in general_photos.items():
+                if key in norm_name or norm_name in key:
+                    photo_path = gpath
+                    break
+
+        # Procesar los archivos de corte (variantes de broca y medida)
+        variants = []
+        brocas_found = set()
+        dimensions_found = set()
+
+        for fn in sorted(nc_files):
+            full_fpath = os.path.join(root, fn)
+            broca = extract_broca(f"{root} {fn}")
+            w, h, dim_label = extract_dimensions_from_name(fn)
+            brocas_found.add(broca)
+            if dim_label != "Medida Estándar":
+                dimensions_found.add(dim_label)
+
+            variants.append({
+                "file_id": get_hash(full_fpath),
+                "name": fn,
+                "path": full_fpath,
+                "broca": broca,
+                "width": w,
+                "height": h,
+                "dim_label": dim_label,
+                "has_gcode": full_fpath.lower().endswith((".nc", ".gcode", ".tap")),
+                "ext": Path(fn).suffix.lower()
+            })
+
+        col_dict = collections[col_id]["folders"]
+        if folder_id not in col_dict:
+            col_dict[folder_id] = {
+                "folder_id": folder_id,
+                "name": shape_category,
+                "collection": col_id,
+                "designs_dict": {},
+                "is_ignored": folder_id in ignored_folders
+            }
+
+        # Si el diseño conceptual ya existía dentro de la misma forma (ej: diferentes carpetas de broca), lo fusionamos!
+        d_dict = col_dict[folder_id]["designs_dict"]
+        if design_id not in d_dict:
+            d_dict[design_id] = {
+                "id": design_id,
+                "name": sub_concept,
+                "category": shape_category,
+                "collection": col_id,
+                "folder_path": root,
+                "variants": [],
+                "available_brocas": set(),
+                "available_dimensions": set(),
+                "photo_path": photo_path,
+                "has_real_photo": bool(photo_path),
+                "is_ignored": (folder_id in ignored_folders) or (design_id in ignored_designs)
+            }
+
+        d_dict[design_id]["variants"].extend(variants)
+        d_dict[design_id]["available_brocas"].update(brocas_found)
+        d_dict[design_id]["available_dimensions"].update(dimensions_found)
+        if not d_dict[design_id]["photo_path"] and photo_path:
+            d_dict[design_id]["photo_path"] = photo_path
+            d_dict[design_id]["has_real_photo"] = True
+
+    # Consolidar listas ordenadas
+    result_collections = []
+    for cid in ["ambar", "guissel", "otros"]:
+        cdata = collections[cid]
+        folder_list = []
+        
+        for fid, fobj in cdata["folders"].items():
+            designs_list = []
+            for did, dobj in fobj["designs_dict"].items():
+                dobj["available_brocas"] = sorted(list(dobj["available_brocas"]))
+                dobj["available_dimensions"] = sorted(list(dobj["available_dimensions"]))
+                dobj["variants_count"] = len(dobj["variants"])
+                # Archivo principal representativo para el vector
+                first_gcode = next((v for v in dobj["variants"] if v["has_gcode"]), None)
+                dobj["primary_file"] = first_gcode or (dobj["variants"][0] if dobj["variants"] else None)
+                designs_list.append(dobj)
+
+            designs_list.sort(key=lambda x: x["name"].lower())
+            
+            fobj["designs"] = designs_list
+            fobj["designs_count"] = len(designs_list)
+            fobj["total_files"] = sum(d["variants_count"] for d in designs_list)
+            del fobj["designs_dict"]
+            folder_list.append(fobj)
+
+        folder_list.sort(key=lambda x: x["name"].lower())
+        cdata["folders"] = folder_list
+        cdata["folders_count"] = len(folder_list)
+        cdata["total_designs"] = sum(f["designs_count"] for f in folder_list)
+        result_collections.append(cdata)
+
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(result_collections, f, indent=2, ensure_ascii=False)
+
+    return result_collections
