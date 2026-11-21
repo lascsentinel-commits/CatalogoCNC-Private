@@ -5,10 +5,10 @@ echo ======================================================================
 echo   Iniciando Catalogo CNC en http://localhost:8090 ...
 echo ======================================================================
 
-python -c "import fastapi, uvicorn, pydantic" 2>nul
+python -c "import fastapi, uvicorn, pydantic, PIL, multipart" 2>nul
 if errorlevel 1 (
-    echo [*] Instalando dependencias necesarias (fastapi, uvicorn, pillow)...
-    pip install fastapi uvicorn python-multipart pillow
+    echo [*] Instalando dependencias necesarias: fastapi, uvicorn, pydantic, pillow, python-multipart...
+    python -m pip install fastapi uvicorn pydantic python-multipart pillow
 )
 
 start "" http://localhost:8090

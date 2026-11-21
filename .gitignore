@@ -7,3 +7,4 @@ cache/*.svg
 *.tmp
 .venv/
 venv/
+windows_explorer_integration/ugs_path.txt
